@@ -1,0 +1,138 @@
+  <!DOCTYPE html>
+  <html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>留言板</title>
+    <!-- <link rel="stylesheet" href="https://unpkg.com/bootstrap@4.1.3/dist/css/bootstrap.css"> -->
+    <link rel="stylesheet" href="./assets/bootstrap.css">
+    <!-- 引入进度条样式 -->
+    <link rel="stylesheet" href="./assets/nprogress.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <h1 class="display-1">留言板</h1>
+      <hr>
+      <div id="loading">正在拼命加载数据.....</div>
+      <ul id="messages" class="list-unstyled">
+
+      </ul>
+      <hr>
+      <div class="form-group">
+        <label for="txt_name">称呼：</label>
+        <input class="form-control" id="txt_name" name="xxx" type="text">
+      </div>
+      <div class="form-group">
+        <label for="txt_content">留言：</label>
+        <textarea class="form-control" id="txt_content" cols="80" rows="10"></textarea>
+      </div>
+      <button type="button" id="btn_send" class="btn btn-primary">提交</button>
+    </div>
+
+    <script src="./assets/jquery.js"></script>
+    <script src="./assets/template-web.js"></script>
+    <!-- 引用进度条js -->
+    <script src="./assets/nprogress.js"></script>
+
+    <!-- 增加进度条显示 -->
+    <script>
+      $.ajaxSetup({
+        beforeSend: function () {
+          NProgress.start();
+        },
+        complete: function () {
+          NProgress.done();
+        }
+      });
+    </script>
+
+
+    <!-- 增加模板引擎，使更容易更高效的将数据渲染到HTML字符串中 -->
+    <script id="shuju" type="text/html">
+      {{ each data }}
+      <li class="media">
+        <img class="mr-3" src="avatar.png" alt={{$value.name}}>
+        <div class="media-body">
+          <h4>{{$value.name}}</h4>
+          <p>{{$value.content}}</p>
+        </div>
+      </li>
+      {{/each}}
+    </script>
+
+    <!-- 使用jQuery封装的Ajax访问的请求方法 获取留言信息 -->
+    <script>
+      //初始化，加载数据
+      loadData();
+      //获取已经存在的数据，加载到页面中
+      /* 方式：GET 
+      方法名: /getMsg
+      参数：无
+      返回: 所有留言[JSON] */
+      function loadData() {
+        //使用jQuery封装的Ajax访问的请求方法 获取留言信息
+        $.ajax({
+          type: 'GET',
+          url: '/getMsg',
+          dataType: 'json',
+          success: function (res) {
+            console.log(res)
+            var str = template('shuju', {
+              data: res
+            })
+            //获取ul 将拼接的li 放置到ul 中
+            $('#messages').html(str);
+          },
+          //拼命加载中显示
+          beforeSend: function () {
+            $('#loading').show();
+            // 类似 onloadstart事件
+          },
+          //拼命加载中隐藏
+          complete: function () {
+            $('#loading').hide();
+            // 类似 onloadend 事件
+          }
+        })
+      }
+    </script>
+
+    <!-- 使用jQuery封装的Ajax访问的请求方法 提交留言 -->
+    <script>
+      //添加一个发表留言的功能
+      /* 
+      方式：POST
+      方法名：/addMsg 
+      参数：name[string]
+          content:[string]
+      返回值：添加成功：true 
+            添加失败：false
+      */
+      $('#btn_send').click(function () {
+        var txt_name = $('#txt_name').val();
+        var txt_content = $('#txt_content').val();
+        $.ajax({
+          type: 'POST',
+          url: '/addMsg',
+          data: {
+            'name': txt_name,
+            'content': txt_content,
+          },
+          success: function (res) {
+            if (res === true) {
+              loadData();
+            } else {
+              alert("添加失败，请联系网络管理员！");
+            }
+            $('#txt_name').val('');
+            $('#txt_content').val('');
+          }
+        })
+      })
+    </script>
+  </body>
+
+  </html>
